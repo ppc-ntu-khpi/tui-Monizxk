@@ -1,12 +1,16 @@
 package com.mybank.tui;
 
-import jexer.TAction;
-import jexer.TApplication;
-import jexer.TField;
-import jexer.TText;
-import jexer.TWindow;
+import com.mybank.data.DataSource;
+import com.mybank.domain.Account;
+import com.mybank.domain.Bank;
+import com.mybank.domain.Customer;
+import com.mybank.domain.SavingsAccount;
+import jexer.*;
 import jexer.event.TMenuEvent;
 import jexer.menu.TMenu;
+
+
+import java.util.Locale;
 
 /**
  *
@@ -18,12 +22,16 @@ public class TUIdemo extends TApplication {
     private static final int CUST_INFO = 2010;
 
     public static void main(String[] args) throws Exception {
+        Locale.setDefault(new Locale("en","us"));
+
         TUIdemo tdemo = new TUIdemo();
         (new Thread(tdemo)).start();
     }
 
     public TUIdemo() throws Exception {
         super(BackendType.SWING);
+
+        new DataSource("./data/test.dat").loadData();
 
         addToolMenu();
         //custom 'File' menu
@@ -69,13 +77,28 @@ public class TUIdemo extends TApplication {
         custWin.addButton("&Show", 28, 2, new TAction() {
             @Override
             public void DO() {
-                try {
-                    int custNum = Integer.parseInt(custNo.getText());
-                    //details about customer with index==custNum
-                    details.setText("Owner Name: John Doe (id="+custNum+")\nAccount Type: 'Checking'\nAccount Balance: $200.00");
-                } catch (Exception e) {
-                    messageBox("Error", "You must provide a valid customer number!").show();
+            try {
+                int custNum = Integer.parseInt(custNo.getText());
+                Customer customer = Bank.getCustomer(custNum);
+                Account account = customer.getAccount(0);
+                String type;
+
+                if (account instanceof SavingsAccount) {
+                    type = "SavingsAccount";
+                } else {
+                    type = "CheckingAccount";
                 }
+
+                //details about customer with index==custNum
+                details.setText(
+                    String.format(
+                        "Owner Name: %s %s (id=%d)\nAccount Type: %s\nAccount Balance: $%.2f",
+                        customer.getFirstName(), customer.getLastName(), custNum, type, account.getBalance()
+                    )
+                );
+            } catch (Exception e) {
+                messageBox("Error", "You must provide a valid customer number!").show();
+            }
             }
         });
     }
